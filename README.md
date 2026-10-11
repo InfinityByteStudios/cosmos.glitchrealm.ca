@@ -1,6 +1,6 @@
 # Particle Cosmos
 
-An interactive deep-space particle field. Up to 120,000 glowing bodies orbit in a spiral galaxy, respond to your cursor with spring physics, and ripple outward when you click. A minimal HUD lets you tune velocity, turbulence, gravity, cursor pull, size, density and colour palette. Everything works as a guest; signing in (Netlify Identity) lets you name, save and reload presets across devices.
+An interactive deep-space particle field. Up to 120,000 glowing bodies orbit in a spiral galaxy, respond to your cursor with spring physics, and ripple outward when you click. A minimal HUD lets you tune velocity, turbulence, gravity, cursor pull, size, density and colour palette. Everything works as a guest; signing in with email or Google, GitHub, GitLab, Bitbucket or Facebook (Netlify Identity) lets you name, save and reload presets across devices.
 
 ## Interactions
 

@@ -5,6 +5,7 @@ import Slider from "./Slider";
 interface ControlPanelProps {
   settings: Settings;
   onChange: (next: Settings) => void;
+  onReset: () => void;
   open: boolean;
   onClose: () => void;
 }
@@ -22,8 +23,9 @@ function shuffle(current: Settings): Settings {
   };
 }
 
-export default function ControlPanel({ settings, onChange, open, onClose }: ControlPanelProps) {
+export default function ControlPanel({ settings, onChange, onReset, open, onClose }: ControlPanelProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const isDefault = (Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]).every((k) => settings[k] === DEFAULT_SETTINGS[k]);
   const set = <K extends keyof Settings>(key: K, v: Settings[K]) => onChange({ ...settings, [key]: v });
 
   return (
@@ -48,15 +50,26 @@ export default function ControlPanel({ settings, onChange, open, onClose }: Cont
           <span className="text-[10px] tracking-[0.3em] text-white/30">CTRL</span>
           <h2 className="font-display text-lg italic leading-none text-white">Field parameters</h2>
         </div>
-        <button
-          type="button"
-          onClick={() => (window.matchMedia("(min-width: 768px)").matches ? setCollapsed((c) => !c) : onClose())}
-          className="flex h-6 w-6 items-center justify-center border border-white/10 text-[11px] text-white/60 transition-colors duration-500 hover:border-[var(--accent)] hover:text-[var(--accent)]"
-          aria-label={collapsed ? "Expand controls" : "Collapse controls"}
-        >
-          <span className="hidden md:inline">{collapsed ? "+" : "−"}</span>
-          <span className="md:hidden">×</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onReset}
+            disabled={isDefault}
+            title="Reset every parameter and the palette to defaults"
+            className="flex h-6 items-center border border-white/10 px-2 text-[8.5px] uppercase tracking-[0.25em] text-white/60 transition-colors duration-500 hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:border-white/5 disabled:text-white/20 disabled:hover:border-white/5 disabled:hover:text-white/20"
+          >
+            ↺ Defaults
+          </button>
+          <button
+            type="button"
+            onClick={() => (window.matchMedia("(min-width: 768px)").matches ? setCollapsed((c) => !c) : onClose())}
+            className="flex h-6 w-6 items-center justify-center border border-white/10 text-[11px] text-white/60 transition-colors duration-500 hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            aria-label={collapsed ? "Expand controls" : "Collapse controls"}
+          >
+            <span className="hidden md:inline">{collapsed ? "+" : "−"}</span>
+            <span className="md:hidden">×</span>
+          </button>
+        </div>
       </header>
 
       <div
@@ -110,7 +123,10 @@ export default function ControlPanel({ settings, onChange, open, onClose }: Cont
                       <span
                         key={c}
                         className="flex-1 transition-[filter] duration-500"
-                        style={{ background: c, boxShadow: active ? `0 0 10px ${c}` : "none" }}
+                        style={{
+                          background: c,
+                          boxShadow: active ? `0 0 10px ${c}` : "none",
+                        }}
                       />
                     ))}
                   </span>
@@ -121,7 +137,13 @@ export default function ControlPanel({ settings, onChange, open, onClose }: Cont
                   </span>
                   <span className="text-[8px] tracking-[0.25em] text-white/25">{p.code}</span>
                   {active && (
-                    <span className="absolute right-2 top-[18px] h-1 w-1 rotate-45" style={{ background: p.accent, boxShadow: `0 0 8px ${p.accent}` }} />
+                    <span
+                      className="absolute right-2 top-[18px] h-1 w-1 rotate-45"
+                      style={{
+                        background: p.accent,
+                        boxShadow: `0 0 8px ${p.accent}`,
+                      }}
+                    />
                   )}
                 </button>
               );
@@ -132,10 +154,11 @@ export default function ControlPanel({ settings, onChange, open, onClose }: Cont
         <footer className="flex gap-px border-t border-white/10">
           <button
             type="button"
-            onClick={() => onChange({ ...DEFAULT_SETTINGS })}
-            className="flex-1 py-2.5 text-[9px] uppercase tracking-[0.3em] text-white/45 transition-colors duration-500 hover:bg-white/[0.03] hover:text-white"
+            onClick={onReset}
+            disabled={isDefault}
+            className="flex-1 py-2.5 text-[9px] uppercase tracking-[0.3em] text-white/45 transition-colors duration-500 hover:bg-white/[0.03] hover:text-white disabled:text-white/20 disabled:hover:bg-transparent"
           >
-            ↺ Reset
+            ↺ Reset to defaults
           </button>
           <span className="w-px bg-white/10" />
           <button

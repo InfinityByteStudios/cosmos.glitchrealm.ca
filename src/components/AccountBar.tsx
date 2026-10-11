@@ -2,10 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AuthError,
   MissingIdentityError,
+  getSettings,
   login,
   logout,
+  oauthLogin,
   requestPasswordRecovery,
   signup,
+  type AuthProvider,
   type User,
 } from "@netlify/identity";
 import { deletePreset, listPresets, savePreset, type Preset } from "../lib/presets";
@@ -125,6 +128,82 @@ function describeError(err: unknown) {
   return err instanceof Error ? err.message : "Something went wrong.";
 }
 
+type OAuthProvider = Exclude<AuthProvider, "email">;
+
+// Every external provider Netlify Identity supports, in display order.
+const OAUTH_PROVIDERS: { id: OAuthProvider; label: string; icon: string }[] = [
+  {
+    id: "google",
+    label: "Google",
+    icon: "M21.35 11.1H12v2.98h5.35c-.23 1.4-1.66 4.1-5.35 4.1a5.9 5.9 0 0 1 0-11.8c1.84 0 3.07.78 3.77 1.45l2.57-2.48A9.4 9.4 0 0 0 12 2.6a9.4 9.4 0 0 0 0 18.8c5.43 0 9.03-3.82 9.03-9.2 0-.62-.07-1.09-.15-1.56Z",
+  },
+  {
+    id: "github",
+    label: "GitHub",
+    icon: "M12 2.2a9.8 9.8 0 0 0-3.1 19.1c.5.1.67-.21.67-.47v-1.7c-2.73.6-3.3-1.31-3.3-1.31-.45-1.14-1.1-1.44-1.1-1.44-.9-.61.07-.6.07-.6 1 .07 1.52 1.02 1.52 1.02.88 1.52 2.32 1.08 2.88.82.09-.64.35-1.08.63-1.33-2.18-.25-4.47-1.09-4.47-4.85 0-1.07.38-1.95 1.01-2.63-.1-.25-.44-1.25.1-2.6 0 0 .82-.27 2.7 1a9.3 9.3 0 0 1 4.9 0c1.87-1.27 2.7-1 2.7-1 .53 1.35.2 2.35.1 2.6.63.68 1 1.56 1 2.63 0 3.77-2.3 4.6-4.48 4.84.36.31.67.92.67 1.85v2.74c0 .27.18.58.68.48A9.8 9.8 0 0 0 12 2.2Z",
+  },
+  {
+    id: "gitlab",
+    label: "GitLab",
+    icon: "m21.6 13.4-1.1-3.4-2.18-6.7a.38.38 0 0 0-.72 0L15.42 10H8.58L6.4 3.3a.38.38 0 0 0-.72 0L3.5 10l-1.1 3.4a.75.75 0 0 0 .27.84L12 21.03l9.33-6.79a.75.75 0 0 0 .27-.84Z",
+  },
+  {
+    id: "bitbucket",
+    label: "Bitbucket",
+    icon: "M2.78 3a.62.62 0 0 0-.62.72l2.62 15.9c.07.4.41.69.82.7h12.56c.3 0 .56-.22.61-.52l2.62-16.08a.62.62 0 0 0-.62-.72H2.78Zm11.03 11.5H10.2l-.98-5.1h5.47l-.88 5.1Z",
+  },
+  {
+    id: "facebook",
+    label: "Facebook",
+    icon: "M22 12.06A10 10 0 1 0 10.44 22v-7.03H7.9v-2.9h2.54V9.85c0-2.5 1.49-3.9 3.78-3.9 1.1 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.78-1.63 1.57v1.88h2.78l-.45 2.9h-2.33V22A10 10 0 0 0 22 12.06Z",
+  },
+];
+
+function OAuthButtons() {
+  const [enabled, setEnabled] = useState<Partial<Record<AuthProvider, boolean>> | null>(null);
+  const [pending, setPending] = useState<OAuthProvider | null>(null);
+
+  useEffect(() => {
+    getSettings()
+      .then((s) => setEnabled(s.providers))
+      .catch(() => setEnabled({}));
+  }, []);
+
+  const providers = OAUTH_PROVIDERS.filter((p) => enabled?.[p.id]);
+  if (enabled && providers.length === 0) return null;
+
+  return (
+    <div className="border-b border-white/10 p-4 pb-3">
+      <div className="grid grid-cols-2 gap-px border border-white/10 bg-white/10">
+        {(enabled ? providers : OAUTH_PROVIDERS.slice(0, 4)).map((p, i, list) => (
+          <button
+            key={p.id}
+            type="button"
+            disabled={!enabled || pending !== null}
+            onClick={() => {
+              setPending(p.id);
+              oauthLogin(p.id);
+            }}
+            className={`flex items-center justify-center gap-2 bg-[#0b0b11] py-2.5 text-[9.5px] uppercase tracking-[0.22em] text-white/70 transition-colors duration-500 hover:bg-[#12121a] hover:text-[var(--accent)] disabled:cursor-default disabled:hover:bg-[#0b0b11] ${
+              list.length % 2 === 1 && i === list.length - 1 ? "col-span-2" : ""
+            } ${!enabled ? "animate-pulse" : ""}`}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden className="h-3.5 w-3.5 fill-current">
+              <path d={p.icon} />
+            </svg>
+            {pending === p.id ? "Redirecting…" : p.label}
+          </button>
+        ))}
+      </div>
+      <p className="mt-3 flex items-center gap-2 text-[8.5px] uppercase tracking-[0.3em] text-white/35">
+        <span className="h-px flex-1 bg-white/10" />
+        or with email
+        <span className="h-px flex-1 bg-white/10" />
+      </p>
+    </div>
+  );
+}
+
 function AuthForm() {
   const [mode, setMode] = useState<"in" | "up" | "reset">("in");
   const [email, setEmail] = useState("");
@@ -180,6 +259,7 @@ function AuthForm() {
           </button>
         ))}
       </div>
+      {mode !== "reset" && <OAuthButtons />}
       <div className="space-y-2.5 p-4">
         <p className="font-display text-[17px] italic leading-snug text-white/85">
           {mode === "reset" ? "Recover access." : "Keep your universes."}
