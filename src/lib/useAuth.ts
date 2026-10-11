@@ -14,6 +14,7 @@ export function useAuth() {
       // Processes email confirmation / recovery / OAuth links that land with a hash token.
       try {
         const result = await handleAuthCallback();
+        if (result?.type === "oauth") setNotice({ tone: "ok", text: `Signed in as ${result.user?.email ?? "you"}.` });
         if (result?.type === "confirmation") setNotice({ tone: "ok", text: "Email confirmed — you're signed in." });
         if (result?.type === "recovery") setNotice({ tone: "ok", text: "Signed in via recovery link. Update your password from your account." });
       } catch (err) {

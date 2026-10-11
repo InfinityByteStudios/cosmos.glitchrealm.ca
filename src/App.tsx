@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react"
 import AccountBar from "./components/AccountBar";
 import ControlPanel from "./components/ControlPanel";
 import type { Telemetry } from "./components/Cosmos";
-import { normalizeSettings, paletteById, type Settings } from "./lib/settings";
+import { DEFAULT_SETTINGS, normalizeSettings, paletteById, type Settings } from "./lib/settings";
 import { useAuth } from "./lib/useAuth";
 
 const Cosmos = lazy(() => import("./components/Cosmos"));
@@ -47,6 +47,11 @@ export default function App() {
     },
     [setNotice],
   );
+
+  const onReset = useCallback(() => {
+    setSettings({ ...DEFAULT_SETTINGS });
+    setNotice({ tone: "ok", text: "Reset to defaults — the field is settling." });
+  }, [setNotice]);
 
   const [cx, cy, cz] = telemetry.cursor;
 
@@ -136,6 +141,7 @@ export default function App() {
       <ControlPanel
         settings={settings}
         onChange={setSettings}
+        onReset={onReset}
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
       />
